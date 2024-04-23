@@ -83,18 +83,12 @@ namespace WebCrawler
                         Tag = cleanedTagContent
                     };
 
-                    string strSQL = string.Empty;
-
+                    // 寫入資料庫
                     objBase.DB_Connection();
-
-                    strSQL = "INSERT INTO News (NewsClass, NewsTitle, NewsDescription, NewsContxt, NewsImg1, NewsPublish, NewsPutTime, Creator, NewsOffTime, Tag) ";
+                    string strSQL = "INSERT INTO News (NewsClass, NewsTitle, NewsDescription, NewsContxt, NewsImg1, NewsPublish, NewsPutTime, Creator, NewsOffTime, Tag) ";
                     strSQL += $" VALUES ('{news.NewsClass}', '{news.NewsTitle}', '{news.NewsDescription}', '{news.NewsContxt}', '{news.NewsImg1}', '{news.NewsPublish}', '{news.NewsPutTime?.ToString("yyyy-MM-dd HH:mm:ss")}', '{news.Creator}', '{news.NewsOffTime?.ToString("yyyy-MM-dd HH:mm:ss")}', '{news.Tag}')";
                     objBase.SqlExecute(strSQL);
-
                     objBase.DB_Close();
-
-
-                    txt_Num.Text += Environment.NewLine;
                 }
             }
 
