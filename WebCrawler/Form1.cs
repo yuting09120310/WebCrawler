@@ -21,7 +21,7 @@ namespace WebCrawler
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            objBase.db_ConnectionString = "Server=192.168.0.210;Database=ShopWebsite;User ID=sa;Password=Alex0310;Trusted_Connection=True;Integrated Security=False;Encrypt=False;";
+            objBase.db_ConnectionString = "Server=192.168.0.210,61757;Database=ShopWebsite;User ID=sa;Password=Alex0310;Trusted_Connection=True;Integrated Security=False;Encrypt=False;";
         }
 
 
@@ -34,7 +34,7 @@ namespace WebCrawler
             for (int i = 1; i <= page; i++)
             {
                 // 新聞網站的URL
-                string url = $"https://technews.tw/category/%e8%83%bd%e6%ba%90%e7%a7%91%e6%8a%80/page/{i}";
+                string url = "https://technews.tw/category/semiconductor/chip/memory" + "/page/" + i;
 
                 // 使用HttpClient發送GET請求並獲取HTML頁面內容
                 HttpClient client = new HttpClient();
@@ -62,7 +62,6 @@ namespace WebCrawler
                     string cleanedTagContent = Regex.Replace(tagContent, @"\s+", " ").Trim();
 
 
-
                     // 下載圖片取得圖片檔名
                     string imgName = await DownloadImage(imgLink);
 
@@ -71,7 +70,7 @@ namespace WebCrawler
 
                     News news = new News()
                     {
-                        NewsClass = 8,
+                        NewsClass = 10006,
                         NewsTitle = title,
                         NewsDescription = description,
                         NewsContxt = contxt,
@@ -83,12 +82,9 @@ namespace WebCrawler
                         Tag = cleanedTagContent
                     };
 
+
                     // 寫入資料庫
-                    objBase.DB_Connection();
-                    string strSQL = "INSERT INTO News (NewsClass, NewsTitle, NewsDescription, NewsContxt, NewsImg1, NewsPublish, NewsPutTime, Creator, NewsOffTime, Tag) ";
-                    strSQL += $" VALUES ('{news.NewsClass}', '{news.NewsTitle}', '{news.NewsDescription}', '{news.NewsContxt}', '{news.NewsImg1}', '{news.NewsPublish}', '{news.NewsPutTime?.ToString("yyyy-MM-dd HH:mm:ss")}', '{news.Creator}', '{news.NewsOffTime?.ToString("yyyy-MM-dd HH:mm:ss")}', '{news.Tag}')";
-                    objBase.SqlExecute(strSQL);
-                    objBase.DB_Close();
+                    InsertSQL(news);
                 }
             }
 
@@ -133,27 +129,61 @@ namespace WebCrawler
         // 下載圖片
         private async Task<string> DownloadImage(string imageUrl)
         {
-            // 取得應用程序的啟動路徑
-            string startupPath = AppDomain.CurrentDomain.BaseDirectory;
-
-            // 使用HttpClient下載圖片
-            using (HttpClient client = new HttpClient())
+            try
             {
-                byte[] imageBytes = await client.GetByteArrayAsync(imageUrl);
+                // 取得應用程序的啟動路徑
+                string startupPath = AppDomain.CurrentDomain.BaseDirectory;
 
-                // 取得圖片的檔名
-                string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
+                // 使用HttpClient下載圖片
+                using (HttpClient client = new HttpClient())
+                {
+                    byte[] imageBytes = await client.GetByteArrayAsync(imageUrl);
 
-                // 組合完整的圖片路徑
-                string imagePath = Path.Combine(startupPath, "Images", fileName);
+                    // 取得圖片的檔名
+                    string fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
 
-                // 寫入圖片檔案
-                File.WriteAllBytes(imagePath, imageBytes);
+                    // 組合完整的圖片路徑
+                    string imagePath = Path.Combine(startupPath, "Images", fileName);
 
-                return fileName;
+                    // 寫入圖片檔案
+                    File.WriteAllBytes(imagePath, imageBytes);
+
+                    return fileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return ex.Message;
             }
         }
 
         
+        // 寫入資料庫
+        private void InsertSQL(News news)
+        {
+            // 建立一個 Dictionary 來存儲 SQL 查詢的參數
+            Dictionary<string, string> sqlParameters = new Dictionary<string, string>();
+
+            // 將參數添加到 Dictionary 中
+            sqlParameters.Add("@NewsClass", news.NewsClass.ToString());
+            sqlParameters.Add("@NewsTitle", news.NewsTitle);
+            sqlParameters.Add("@NewsDescription", news.NewsDescription);
+            sqlParameters.Add("@NewsContxt", news.NewsContxt);
+            sqlParameters.Add("@NewsImg1", news.NewsImg1);
+            sqlParameters.Add("@NewsPublish", news.NewsPublish.ToString());
+            sqlParameters.Add("@NewsPutTime", news.NewsPutTime?.ToString("yyyy-MM-dd HH:mm:ss"));
+            sqlParameters.Add("@Creator", news.Creator.ToString());
+            sqlParameters.Add("@NewsOffTime", news.NewsOffTime?.ToString("yyyy-MM-dd HH:mm:ss"));
+            sqlParameters.Add("@Tag", news.Tag);
+
+
+            // 寫入資料庫
+            objBase.DB_Connection();
+            string strSQL = "INSERT INTO News (NewsClass, NewsTitle, NewsDescription, NewsContxt, NewsImg1, NewsPublish, NewsPutTime, Creator, NewsOffTime, Tag) ";
+            strSQL += "VALUES (@NewsClass, @NewsTitle, @NewsDescription, @NewsContxt, @NewsImg1, @NewsPublish, @NewsPutTime, @Creator, @NewsOffTime, @Tag)";
+            objBase.SqlExecute(strSQL, sqlParameters);
+            objBase.DB_Close();
+        }
     }
 }
